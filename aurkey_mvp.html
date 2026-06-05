@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Aurkey — Identidade Digital Soberana</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --navy:#0D1B2A;--gold:#C9A84C;--gold-pale:#FAF6EE;--gold-border:#E2D5BE;
+  --green:#1D9E75;--red:#D85A30;--blue:#185FA5;--bg:#FDFAF5;
+  --ink:#1A1410;--ink-mid:#3D3028;--ink-light:#7A6A58;
+  --r12:12px;--r10:10px;--r8:8px;
+}
+body{background:#e8e4de;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'DM Sans',sans-serif;color:var(--ink)}
+#phone{width:390px;height:844px;background:var(--bg);border-radius:40px;overflow:hidden;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.28);display:flex;flex-direction:column}
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden;position:relative;animation:fadein .18s ease}
+.screen.on{display:flex}
+@keyframes fadein{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.scroll{flex:1;overflow-y:auto;padding:0 18px 24px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;background:var(--bg);border-bottom:.5px solid var(--gold-border);flex-shrink:0}
+.hdr-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:6px}
+.hdr-logo svg{width:22px;height:22px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.icon-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.7}
+
+/* BOTTOM NAV */
+.bnav{display:flex;background:#fff;border-top:.5px solid var(--gold-border);flex-shrink:0;padding:8px 0 20px}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:9px;font-weight:500;color:var(--ink-light);letter-spacing:.03em;text-transform:uppercase}
+.bni svg{width:20px;height:20px;stroke:var(--ink-light);fill:none;stroke-width:1.6}
+.bni.act{color:var(--gold)}
+.bni.act svg{stroke:var(--gold)}
+
+/* CARDS */
+.cw{background:#fff;border:.5px solid var(--gold-border);border-radius:var(--r12);padding:14px}
+.cd{background:var(--navy);border-radius:var(--r12);padding:14px;color:#fff}
+.cgold{background:var(--gold-pale);border:.5px solid var(--gold-border);border-radius:var(--r12);padding:14px}
+
+/* BUTTONS */
+.btn-gold{background:var(--gold);color:#fff;border:none;border-radius:var(--r10);padding:13px;width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-gold:active{opacity:.8}
+.btn-out{background:transparent;color:var(--ink);border:1px solid var(--gold-border);border-radius:var(--r10);padding:12px;width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer}
+.btn-navy{background:var(--navy);color:#fff;border:none;border-radius:var(--r10);padding:13px;width:100%;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer}
+
+/* TAGS */
+.tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.02em}
+.tg{background:#e8f7f2;color:var(--green)}
+.ta{background:#fef6e4;color:#b07d10}
+.tr{background:#fdf0ec;color:var(--red)}
+.tb{background:#eaf1fb;color:var(--blue)}
+.tn{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+.lv0{background:#f0eeec;color:#888}
+.lv1{background:#e8f7f2;color:var(--green)}
+.lv2{background:#fef6e4;color:#b07d10}
+.lv3{background:#eaf1fb;color:var(--blue)}
+.lv4{background:#f0eafd;color:#7c3aed}
+.lv5{background:#fdf0ec;color:var(--red)}
+
+/* TOGGLE */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:.5px solid var(--gold-border)}
+.tog-row:last-child{border-bottom:none}
+.tog{width:38px;height:21px;border-radius:11px;background:#d0cbc5;position:relative;cursor:pointer;transition:background .15s;flex-shrink:0}
+.tog.on{background:var(--green)}
+.tog::after{content:'';width:17px;height:17px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog.on::after{left:19px}
+
+/* PROGRESS */
+.prog-bar{height:4px;border-radius:100px;background:#e8e4de;overflow:hidden}
+.prog-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),#e8c86a)}
+.prog-fill.green{background:linear-gradient(90deg,var(--green),#3dd6a3)}
+
+/* STEP DOTS */
+.sdots{display:flex;gap:6px;align-items:center;justify-content:center}
+.sdot{width:6px;height:6px;border-radius:50%;background:#4a6070;transition:all .3s}
+.sdot.act{width:20px;border-radius:3px;background:var(--gold)}
+.sdot.done{background:var(--green)}
+
+/* PIP STEPS */
+.pips{display:flex;gap:4px;padding:14px 18px 0}
+.pip{flex:1;height:3px;border-radius:2px;background:#e8e4de;transition:background .3s}
+.pip.done{background:var(--gold)}
+
+/* CALLOUT */
+.callout{border-radius:var(--r10);padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+.callout.gold{background:var(--gold-pale);border:.5px solid var(--gold-border)}
+.callout.blue{background:#eaf1fb;border:.5px solid #bcd0f0}
+.callout.red{background:#fdf0ec;border:.5px solid #f0c4b4}
+.callout.green{background:#e8f7f2;border:.5px solid #a8dfd0}
+.callout-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.callout-text{font-size:13px;color:var(--ink-mid);line-height:1.5}
+.callout-text strong{color:var(--ink);font-weight:600}
+
+/* INPUT */
+.input-field{width:100%;border:.5px solid var(--gold-border);border-radius:var(--r8);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:15px;background:#fff;outline:none;transition:border .15s}
+.input-field:focus{border:1.5px solid var(--gold)}
+.input-label{font-size:11px;font-weight:600;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.input-wrap{margin-bottom:14px}
+
+/* RING SVG */
+.ring-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.ring-val{position:absolute;text-align:center}
+
+/* SECTION TITLE */
+.sec-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-light);margin-bottom:10px}
+
+/* GRID 2x2 */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+
+/* LIST ITEM */
+.list-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:.5px solid var(--gold-border)}
+.list-item:last-child{border-bottom:none}
+.list-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+/* MONO */
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+
+/* OVERLAY */
+.overlay{position:absolute;inset:0;background:rgba(13,27,42,.7);display:none;align-items:center;justify-content:center;z-index:100;padding:24px}
+.overlay.on{display:flex}
+.overlay-box{background:#fff;border-radius:20px;padding:28px 24px;width:100%;text-align:center}
+
+/* ===================== SCREEN 0 — SPLASH ===================== */
+#s0{background:var(--navy);justify-content:center;align-items:center;gap:0;padding:40px 28px}
+.splash-logo{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:48px}
+.splash-icon{width:72px;height:72px;background:rgba(201,168,76,.12);border-radius:18px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(201,168,76,.3)}
+.splash-name{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;color:#fff;letter-spacing:.04em}
+.splash-tag{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-top:-4px}
+.splash-steps{background:rgba(255,255,255,.06);border-radius:14px;padding:18px;margin-bottom:40px;width:100%}
+.splash-step{display:flex;align-items:flex-start;gap:12px;padding:8px 0}
+.splash-step+.splash-step{border-top:.5px solid rgba(255,255,255,.08)}
+.snum{width:24px;height:24px;border-radius:50%;background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.4);color:var(--gold);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stext{font-size:13px;color:rgba(255,255,255,.75);line-height:1.45;padding-top:3px}
+.splash-ctas{display:flex;flex-direction:column;gap:10px;width:100%}
+.splash-ctas .btn-gold{background:var(--gold)}
+.splash-link{color:rgba(255,255,255,.5);font-size:13px;text-align:center;cursor:pointer;padding:4px}
+
+/* ===================== SCREEN 1 — HOME ===================== */
+.id-card{background:var(--navy);border-radius:var(--r12);padding:16px;margin-bottom:14px;position:relative;overflow:hidden}
+.id-card::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,rgba(201,168,76,.15) 0%,transparent 70%);pointer-events:none}
+.id-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#fff;margin-bottom:2px}
+.id-cpf{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.45);margin-bottom:14px}
+.id-score-row{display:flex;align-items:center;justify-content:space-between}
+.id-score-left{flex:1}
+.id-score-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:2px}
+.id-score-val{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:700;color:var(--gold);line-height:1}
+.id-score-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:3px}
+.qr-btn{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,.1)}
+
+.gold-widget{background:linear-gradient(135deg,#1a130a 0%,#2a1f08 100%);border-radius:var(--r12);padding:14px;margin-bottom:14px;border:.5px solid rgba(201,168,76,.25)}
+.gw-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.gw-badge{background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.4);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--gold)}
+.gw-pts{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--gold)}
+.gw-sub{font-size:11px;color:rgba(255,255,255,.4)}
+.gw-link{font-size:12px;color:var(--gold);cursor:pointer}
+
+.lvl-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--gold-border)}
+.lvl-item:last-child{border-bottom:none}
+.lvl-badge{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.lvl-info{flex:1}
+.lvl-name{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px}
+.lvl-bar-wrap{flex:1}
+
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.qa-item{background:#fff;border:.5px solid var(--gold-border);border-radius:var(--r10);padding:12px;cursor:pointer;transition:border .15s}
+.qa-item:active{border-color:var(--gold)}
+.qa-icon{font-size:20px;margin-bottom:6px}
+.qa-label{font-size:12px;font-weight:600;color:var(--ink);line-height:1.3}
+.qa-sub{font-size:10px;color:var(--ink-light);margin-top:2px}
+
+/* ===================== SCREEN 2 — VERIFY ===================== */
+.verify-step{display:none;flex-direction:column;gap:14px}
+.verify-step.on{display:flex}
+.step-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.step-sub{font-size:14px;color:var(--ink-light);line-height:1.5}
+.doc-capture{width:100%;height:110px;border:2px dashed var(--gold-border);border-radius:var(--r10);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:all .2s;background:#fff}
+.doc-capture.done{border:2px solid var(--green);background:#e8f7f2}
+.doc-capture-icon{font-size:28px}
+.doc-capture-label{font-size:13px;font-weight:500;color:var(--ink-light)}
+.selfie-ring{width:140px;height:140px;border-radius:50%;border:3px dashed var(--gold-border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;margin:0 auto;background:#fff}
+.selfie-ring.done{border:3px solid var(--green);background:#e8f7f2}
+.selfie-icon{font-size:48px}
+.verify-check{text-align:center;padding:20px 0}
+.check-big{width:72px;height:72px;border-radius:50%;background:#e8f7f2;border:3px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px}
+.check-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--gold-border)}
+.check-item:last-child{border-bottom:none}
+
+/* ===================== SCREEN 3 — HISTORY ===================== */
+.metric-card{background:#fff;border:.5px solid var(--gold-border);border-radius:var(--r10);padding:12px;text-align:center}
+.metric-val{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--gold)}
+.metric-label{font-size:11px;color:var(--ink-light);margin-top:2px}
+
+/* ===================== SCREEN 4 — SHARE ===================== */
+.share-timer{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;color:var(--red)}
+.share-co{font-size:16px;font-weight:600;color:var(--ink)}
+.field-name{font-size:14px;font-weight:500;color:var(--ink)}
+.field-sub{font-size:12px;color:var(--ink-light)}
+
+/* ===================== SCREEN 5 — OPEN FINANCE ===================== */
+.layer-diagram{background:#fff;border:.5px solid var(--gold-border);border-radius:var(--r10);padding:14px;margin-bottom:14px}
+.layer-item{padding:10px 12px;border-radius:8px;margin-bottom:8px;font-size:13px;font-weight:500}
+.layer-arrow{text-align:center;font-size:12px;color:var(--ink-light);padding:4px 0}
+
+/* ===================== SCREEN 6 — EMERGENCY ===================== */
+.emr-badge{background:rgba(216,90,48,.2);border:1px solid rgba(216,90,48,.4);border-radius:6px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--red);letter-spacing:.05em}
+.emr-qr{width:64px;height:64px;border-radius:8px;background:#fff;padding:6px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+.qr-cell{border-radius:1px}
+.blood-type{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;color:var(--red)}
+.med-chip{display:inline-flex;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:12px;color:rgba(255,255,255,.8);margin:2px}
+.scan-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--gold-border)}
+
+/* ===================== SCREEN 7 — DID ===================== */
+.did-card{background:linear-gradient(135deg,var(--navy) 0%,#1a3a5c 100%);border-radius:var(--r12);padding:18px;color:#fff;margin-bottom:14px}
+.did-badge{background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--gold);display:inline-block;margin-bottom:12px}
+.did-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;margin-bottom:4px}
+.did-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.45);margin-bottom:14px}
+.did-hash{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);word-break:break-all;background:rgba(201,168,76,.08);border-radius:6px;padding:10px;margin-bottom:14px}
+.country-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.country-item{background:#fff;border:.5px solid var(--gold-border);border-radius:var(--r8);padding:10px;text-align:center;font-size:12px}
+.country-item.active{border-color:var(--green);background:#e8f7f2}
+.country-item.soon{opacity:.45}
+.country-flag{font-size:20px;margin-bottom:4px}
+.country-status{font-size:10px;color:var(--ink-light);margin-top:2px}
+
+/* ===================== SCREEN 8 — GOLD ===================== */
+.gold-hero{background:linear-gradient(135deg,#1a130a 0%,#2a1f08 100%);border-radius:var(--r12);padding:20px;text-align:center;margin-bottom:14px;border:.5px solid rgba(201,168,76,.25)}
+.gold-tier{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:700;color:var(--gold);line-height:1}
+.gold-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px}
+.mission-item{background:#fff;border:.5px solid var(--gold-border);border-radius:var(--r10);padding:12px;cursor:pointer;transition:all .2s;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.mission-item.done{background:#e8f7f2;border-color:var(--green)}
+.mission-pts{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--gold);white-space:nowrap}
+.mission-item.done .mission-pts{color:var(--green)}
+.mission-special{background:linear-gradient(135deg,#0d1b2a 0%,#1a2f45 100%);border:.5px solid rgba(201,168,76,.3)}
+.mission-special .mission-pts{color:var(--gold)}
+.reward-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:.5px solid var(--gold-border)}
+.reward-logo{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.reward-pts{font-size:12px;font-weight:600;color:var(--gold);white-space:nowrap}
+.reward-btn{background:var(--gold);color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+
+/* ===================== SCREEN 9 — COPILOT ===================== */
+.copilot-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.chat-area{background:#fff;border:.5px solid var(--gold-border);border-radius:var(--r12);overflow:hidden;display:flex;flex-direction:column;height:320px}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
+.chat-msgs::-webkit-scrollbar{display:none}
+.msg{max-width:85%;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.5}
+.msg.ai{background:var(--gold-pale);border:.5px solid var(--gold-border);border-radius:12px 12px 12px 2px;align-self:flex-start}
+.msg.user{background:var(--navy);color:#fff;border-radius:12px 12px 2px 12px;align-self:flex-end}
+.msg-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.msg-chip{background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold)}
+.chat-input{display:flex;border-top:.5px solid var(--gold-border);padding:8px}
+.chat-input input{flex:1;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 8px;background:transparent}
+.chat-send{width:32px;height:32px;border-radius:8px;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.quick-q{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.qq{background:#fff;border:.5px solid var(--gold-border);border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;transition:border .15s}
+.qq:active{border-color:var(--gold)}
+
+/* ===================== SCREEN 10 — B2B ===================== */
+.b2b-step{display:none;flex-direction:column;gap:14px}
+.b2b-step.on{display:flex}
+.plan-card{border:1.5px solid var(--gold-border);border-radius:var(--r10);padding:14px;cursor:pointer;transition:all .2s;position:relative}
+.plan-card.sel{border-color:var(--gold);background:var(--gold-pale)}
+.plan-name{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.plan-price{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--gold)}
+.plan-period{font-size:12px;color:var(--ink-light)}
+.plan-check{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--gold);display:none;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.plan-card.sel .plan-check{display:flex}
+.plan-rec{background:var(--navy);color:var(--gold);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:inline-block;margin-bottom:6px}
+.api-key-box{background:var(--navy);border-radius:var(--r8);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.api-key-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,.6);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.api-copy{background:rgba(201,168,76,.2);border:1px solid rgba(201,168,76,.4);color:var(--gold);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer}
+
+/* CELEBRATION OVERLAY */
+#celebrate{position:absolute;inset:0;background:rgba(13,27,42,.8);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
+#celebrate.on{display:flex}
+.cel-box{background:#fff;border-radius:20px;padding:28px 24px;width:100%;text-align:center}
+.cel-trophy{font-size:52px;margin-bottom:12px}
+.cel-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.cel-pts{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;color:var(--gold)}
+
+/* MODAL OPEN FINANCE */
+#of-modal{position:absolute;inset:0;background:rgba(13,27,42,.65);display:none;align-items:flex-end;z-index:150;padding:0}
+#of-modal.on{display:flex}
+.of-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%}
+</style>
+</head>
+<body>
+<div id="phone">
+
+<!-- ===== SCREEN 0 — SPLASH ===== -->
+<div id="s0" class="screen on">
+  <div class="splash-logo">
+    <div class="splash-icon">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <circle cx="14" cy="14" r="8" stroke="#C9A84C" stroke-width="2.5"/>
+        <circle cx="14" cy="14" r="4" fill="#C9A84C" opacity=".4"/>
+        <rect x="20" y="18" width="14" height="4" rx="2" fill="#C9A84C" transform="rotate(-45 20 18)"/>
+        <rect x="26" y="26" width="5" height="3" rx="1.5" fill="#C9A84C"/>
+        <rect x="29" y="23" width="5" height="3" rx="1.5" fill="#C9A84C"/>
+      </svg>
+    </div>
+    <div class="splash-name">AURKEY</div>
+    <div class="splash-tag">Identidade Digital Soberana</div>
+  </div>
+
+  <div class="splash-steps">
+    <div class="splash-step">
+      <div class="snum">1</div>
+      <div class="stext">Valide CPF, documentos e biometria <strong style="color:#fff">uma única vez</strong></div>
+    </div>
+    <div class="splash-step">
+      <div class="snum">2</div>
+      <div class="stext">Seu <strong style="color:#fff">Trust Score</strong> cresce com cada verificação</div>
+    </div>
+    <div class="splash-step">
+      <div class="snum">3</div>
+      <div class="stext">Compartilhe sua identidade com <strong style="color:#fff">1 toque</strong></div>
+    </div>
+  </div>
+
+  <div class="splash-ctas">
+    <button class="btn-gold" onclick="go(2)">Criar minha identidade digital</button>
+    <button class="btn-out" style="color:#fff;border-color:rgba(255,255,255,.2)" onclick="go(1)">Entrar</button>
+    <div class="splash-link" onclick="go(10)">Cadastrar como parceiro →</div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 1 — HOME ===== -->
+<div id="s1" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">
+      <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+        <circle cx="14" cy="14" r="8" stroke="#0D1B2A" stroke-width="2.5"/>
+        <rect x="20" y="18" width="14" height="4" rx="2" fill="#0D1B2A" transform="rotate(-45 20 18)"/>
+        <rect x="26" y="26" width="5" height="3" rx="1.5" fill="#C9A84C"/>
+      </svg>
+      AURKEY
+    </div>
+    <div class="hdr-right">
+      <div class="icon-btn">
+        <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M15 17H20L18.595 15.595A1 1 0 0 1 18 14.806V11a6.003 6.003 0 0 0-4-5.659V5a2 2 0 1 0-4 0v.341C7.67 6.165 6 8.388 6 11v3.806a1 1 0 0 1-.293.707L4 17H9M15 17v1a3 3 0 1 1-6 0v-1M15 17H9"/></svg>
+      </div>
+      <div class="avatar">DF</div>
+    </div>
+  </div>
+
+  <div class="scroll" style="padding-top:14px">
+    <!-- Identity Card -->
+    <div class="id-card" onclick="go(4)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div class="id-name">Daniel Farias</div>
+          <div class="id-cpf">***.456.789-**</div>
+        </div>
+        <div class="qr-btn" onclick="event.stopPropagation();go(6)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
+            <rect x="14" y="18" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/>
+          </svg>
+        </div>
+      </div>
+      <div class="id-score-row">
+        <div class="id-score-left">
+          <div class="id-score-label">Trust Score</div>
+          <div class="id-score-val">742</div>
+          <div class="id-score-sub">+68 pts com Open Finance →</div>
+        </div>
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="6"/>
+          <circle cx="40" cy="40" r="32" fill="none" stroke="#C9A84C" stroke-width="6"
+            stroke-dasharray="201" stroke-dashoffset="52" stroke-linecap="round"
+            transform="rotate(-90 40 40)"/>
+          <text x="40" y="44" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="11" font-family="DM Sans">742/1000</text>
+        </svg>
+      </div>
+      <div style="margin-top:12px">
+        <div class="prog-bar"><div class="prog-fill" style="width:74.2%"></div></div>
+      </div>
+    </div>
+
+    <!-- Aurkey Gold -->
+    <div class="gold-widget" onclick="go(8)" style="cursor:pointer">
+      <div class="gw-top">
+        <div>
+          <div class="gw-badge">👑 Gold</div>
+          <div style="margin-top:6px">
+            <div class="gw-pts">4.200 pts</div>
+            <div class="gw-sub">Próximo: Platinum em 3.300 pts</div>
+          </div>
+        </div>
+        <div class="gw-link">Ver missões →</div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:56%"></div></div>
+    </div>
+
+    <!-- Permission Levels -->
+    <div class="cw" style="margin-bottom:14px">
+      <div class="sec-title">Níveis de Permissão</div>
+      <div class="lvl-item">
+        <div class="lvl-badge lv1" style="background:#e8f7f2">0</div>
+        <div class="lvl-info">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div class="lvl-name">Presença</div>
+            <span class="tag tg">Ativo</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill green" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div class="lvl-item">
+        <div class="lvl-badge lv2" style="background:#fef6e4">1</div>
+        <div class="lvl-info">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div class="lvl-name">Contato</div>
+            <span class="tag tg">Ativo</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill green" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div class="lvl-item">
+        <div class="lvl-badge lv3" style="background:#eaf1fb">2</div>
+        <div class="lvl-info">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div class="lvl-name">Identidade</div>
+            <span class="tag tg">Ativo</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill green" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div class="lvl-item">
+        <div class="lvl-badge lv4" style="background:#f0eafd">3</div>
+        <div class="lvl-info">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div class="lvl-name">Financeiro</div>
+            <span class="tag ta">Pendente</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Access -->
+    <div class="sec-title">Acesso Rápido</div>
+    <div class="qa-grid">
+      <div class="qa-item" onclick="go(7)">
+        <div class="qa-icon">🔐</div>
+        <div class="qa-label">Credencial DID</div>
+        <div class="qa-sub">Blockchain W3C</div>
+      </div>
+      <div class="qa-item" onclick="go(9)">
+        <div class="qa-icon">🤖</div>
+        <div class="qa-label">Compliance Copilot</div>
+        <div class="qa-sub">IA regulatória</div>
+      </div>
+      <div class="qa-item" onclick="go(5)">
+        <div class="qa-icon">🏦</div>
+        <div class="qa-label">Open Finance</div>
+        <div class="qa-sub">Conectar banco</div>
+      </div>
+      <div class="qa-item" onclick="go(3)">
+        <div class="qa-icon">📊</div>
+        <div class="qa-label">Histórico</div>
+        <div class="qa-sub">12 acessos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <div class="bni act" onclick="go(1)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Início</div>
+    <div class="bni" onclick="go(2)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>Docs</div>
+    <div class="bni" onclick="go(4)"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Compartilhar</div>
+    <div class="bni" onclick="go(3)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>Histórico</div>
+    <div class="bni" onclick="go(8)"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Gold</div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 2 — VERIFY ===== -->
+<div id="s2" class="screen">
+  <div class="pips" id="v-pips">
+    <div class="pip done" id="vp0"></div>
+    <div class="pip" id="vp1"></div>
+    <div class="pip" id="vp2"></div>
+    <div class="pip" id="vp3"></div>
+  </div>
+  <div class="scroll" style="padding-top:16px">
+
+    <!-- Step 1: CPF -->
+    <div class="verify-step on" id="vs1">
+      <div>
+        <div class="step-title">Verificar CPF</div>
+        <div class="step-sub">Seu CPF será validado em tempo real com a Receita Federal via Serpro.</div>
+      </div>
+      <div class="callout gold">
+        <div class="callout-icon">🔒</div>
+        <div class="callout-text"><strong>Criptografia AES-256</strong> — seu CPF nunca é armazenado em texto puro. Você pode revogar seu consentimento a qualquer momento.</div>
+      </div>
+      <div class="input-wrap">
+        <div class="input-label">CPF</div>
+        <input class="input-field" type="text" placeholder="000.000.000-00" id="cpf-input" maxlength="14" oninput="maskCPF(this)">
+      </div>
+      <button class="btn-gold" onclick="nextVerify(2)">Verificar CPF →</button>
+      <button class="btn-out" onclick="go(0)">Voltar</button>
+    </div>
+
+    <!-- Step 2: Document -->
+    <div class="verify-step" id="vs2">
+      <div>
+        <div class="step-title">Documento de Identidade</div>
+        <div class="step-sub">Tire foto da frente e verso do seu RG ou CNH.</div>
+      </div>
+      <div>
+        <div class="input-label" style="margin-bottom:8px">Frente do documento</div>
+        <div class="doc-capture" id="doc-front" onclick="captureDoc('doc-front','Frente capturada ✓')">
+          <div class="doc-capture-icon">📄</div>
+          <div class="doc-capture-label">Toque para fotografar</div>
+        </div>
+      </div>
+      <div>
+        <div class="input-label" style="margin-bottom:8px">Verso do documento</div>
+        <div class="doc-capture" id="doc-back" onclick="captureDoc('doc-back','Verso capturado ✓')">
+          <div class="doc-capture-icon">📄</div>
+          <div class="doc-capture-label">Toque para fotografar</div>
+        </div>
+      </div>
+      <button class="btn-gold" id="doc-next" onclick="nextVerify(3)" style="opacity:.4" disabled>Continuar →</button>
+    </div>
+
+    <!-- Step 3: Selfie -->
+    <div class="verify-step" id="vs3">
+      <div>
+        <div class="step-title">Selfie Biométrica</div>
+        <div class="step-sub">Sua selfie é validada contra a base do Serpro Datavalid com 85M de CNHs.</div>
+      </div>
+      <div style="padding:20px 0;text-align:center">
+        <div class="selfie-ring" id="selfie-ring" onclick="captureSelfie()">
+          <div class="selfie-icon" id="selfie-icon">🧑</div>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:var(--ink-light)" id="selfie-hint">Toque no círculo para capturar</div>
+      </div>
+      <div class="callout gold">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text"><strong>Dicas:</strong> boa iluminação frontal · sem óculos · olhe diretamente para a câmera · rosto centralizado</div>
+      </div>
+      <div style="font-size:12px;text-align:center;color:var(--ink-light)">Liveness detection — prova que é humano real</div>
+      <button class="btn-gold" id="selfie-next" onclick="nextVerify(4)" style="opacity:.4" disabled>Continuar →</button>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div class="verify-step" id="vs4">
+      <div class="verify-check">
+        <div class="check-big">✅</div>
+        <div class="step-title" style="text-align:center">Identidade Verificada!</div>
+        <div class="step-sub" style="text-align:center;margin-top:6px">Seu Nível 2 está ativo. Conecte o Open Finance para ganhar +68 pts no Trust Score.</div>
+      </div>
+      <div class="cw">
+        <div class="check-item"><span style="font-size:18px">✅</span><div><div style="font-size:14px;font-weight:500">CPF verificado</div><div style="font-size:12px;color:var(--ink-light)">Receita Federal via Serpro</div></div></div>
+        <div class="check-item"><span style="font-size:18px">✅</span><div><div style="font-size:14px;font-weight:500">Documento reconhecido</div><div style="font-size:12px;color:var(--ink-light)">OCR + Serpro homologado</div></div></div>
+        <div class="check-item"><span style="font-size:18px">✅</span><div><div style="font-size:14px;font-weight:500">Biometria aprovada</div><div style="font-size:12px;color:var(--ink-light)">Datavalid — 85M CNHs</div></div></div>
+        <div class="check-item"><span style="font-size:18px">✅</span><div><div style="font-size:14px;font-weight:500">Liveness detection</div><div style="font-size:12px;color:var(--ink-light)">Anti-deepfake confirmado</div></div></div>
+      </div>
+      <div class="callout gold">
+        <div class="callout-icon">⚡</div>
+        <div class="callout-text"><strong>Próximo passo:</strong> conecte o Open Finance para desbloquear o Nível 3 e ganhar +68 pts no Trust Score.</div>
+      </div>
+      <button class="btn-gold" onclick="go(5)">Conectar Open Finance →</button>
+      <button class="btn-out" onclick="go(1)">Ir para o início</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 3 — HISTORY ===== -->
+<div id="s3" class="screen">
+  <div class="hdr">
+    <span style="font-size:18px;font-weight:600;color:var(--ink)">Histórico de Acessos</span>
+    <div class="icon-btn" style="opacity:.6">
+      <svg viewBox="0 0 24 24" stroke="var(--ink)" fill="none" stroke-width="1.8"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    </div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="grid2">
+      <div class="metric-card"><div class="metric-val">12</div><div class="metric-label">Total de acessos</div></div>
+      <div class="metric-card"><div class="metric-val">4</div><div class="metric-label">Empresas ativas</div></div>
+    </div>
+
+    <div class="sec-title">Acessos Recentes</div>
+    <div class="cw">
+      <div class="list-item">
+        <div class="list-icon" style="background:#e8f5e9">💜</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">Nubank</div>
+          <div style="font-size:12px;color:var(--ink-light)">Identidade · hoje 09:14</div>
+        </div>
+        <span class="tag lv2">Nível 2</span>
+      </div>
+      <div class="list-item">
+        <div class="list-icon" style="background:#fff3e0">🏠</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">QuintoAndar</div>
+          <div style="font-size:12px;color:var(--ink-light)">Financeiro · ontem 14:32</div>
+        </div>
+        <span class="tag lv3">Nível 3</span>
+      </div>
+      <div class="list-item">
+        <div class="list-icon" style="background:#fff8e1">🛍️</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">Shopee</div>
+          <div style="font-size:12px;color:var(--ink-light)">Contato · 02/06 11:05</div>
+        </div>
+        <span class="tag lv1">Nível 1</span>
+      </div>
+      <div class="list-item">
+        <div class="list-icon" style="background:#fce4ec">🏥</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">Unimed SP</div>
+          <div style="font-size:12px;color:var(--ink-light)">Emergência · 01/06 08:22</div>
+        </div>
+        <span class="tag lv5">Nível 5</span>
+      </div>
+      <div class="list-item">
+        <div class="list-icon" style="background:#e3f2fd">🚢</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">Porto Seguro</div>
+          <div style="font-size:12px;color:var(--ink-light)">Identidade · 30/05 16:40</div>
+        </div>
+        <span class="tag lv2">Nível 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="bnav">
+    <div class="bni" onclick="go(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Início</div>
+    <div class="bni" onclick="go(2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/></svg>Docs</div>
+    <div class="bni" onclick="go(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Compartilhar</div>
+    <div class="bni act" onclick="go(3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>Histórico</div>
+    <div class="bni" onclick="go(8)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Gold</div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 4 — SHARE ===== -->
+<div id="s4" class="screen">
+  <div class="hdr">
+    <span style="font-size:18px;font-weight:600">Compartilhar Identidade</span>
+    <div class="icon-btn" onclick="go(1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="callout gold" style="margin-bottom:14px">
+      <div class="callout-icon">🏢</div>
+      <div class="callout-text" style="flex:1">
+        <strong>QuintoAndar</strong> solicita acesso ao <strong>Nível 3 — Financeiro</strong>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+          <span style="font-size:12px;color:var(--ink-light)">Expira em</span>
+          <span class="share-timer" id="share-timer">04:58</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cw" style="margin-bottom:14px">
+      <div class="sec-title">Dados solicitados</div>
+      <div class="tog-row">
+        <div><div class="field-name">Nome completo</div><div class="field-sub">Daniel Farias</div></div>
+        <div class="tog on" onclick="toggleEl(this)"></div>
+      </div>
+      <div class="tog-row">
+        <div><div class="field-name">CPF verificado</div><div class="field-sub">***.456.789-**</div></div>
+        <div class="tog on" onclick="toggleEl(this)"></div>
+      </div>
+      <div class="tog-row">
+        <div><div class="field-name">Endereço</div><div class="field-sub">São Paulo, SP</div></div>
+        <div class="tog on" onclick="toggleEl(this)"></div>
+      </div>
+      <div class="tog-row">
+        <div><div class="field-name">Selfie biométrica</div><div class="field-sub">Foto verificada</div></div>
+        <div class="tog on" onclick="toggleEl(this)"></div>
+      </div>
+      <div class="tog-row">
+        <div><div class="field-name">Renda verificada</div><div class="field-sub">Open Finance</div></div>
+        <div class="tog" onclick="toggleEl(this)"></div>
+      </div>
+      <div class="tog-row">
+        <div><div class="field-name">E-mail</div><div class="field-sub">d***@gmail.com</div></div>
+        <div class="tog" onclick="toggleEl(this)"></div>
+      </div>
+    </div>
+
+    <div class="cw" style="margin-bottom:20px">
+      <div class="tog-row" style="border-bottom:none">
+        <div><div class="field-name">Duração do acesso</div><div class="field-sub" style="color:var(--green);font-weight:500">30 dias · revogável</div></div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink-light)" stroke-width="1.8"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+
+    <button class="btn-gold" id="auth-btn" onclick="authorizeShare()" style="margin-bottom:10px">Autorizar acesso</button>
+    <button class="btn-out" onclick="go(1)">Recusar</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 5 — OPEN FINANCE ===== -->
+<div id="s5" class="screen">
+  <div class="hdr">
+    <span style="font-size:18px;font-weight:600">Open Finance Bridge</span>
+    <div class="icon-btn" onclick="go(1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="callout blue" style="margin-bottom:14px">
+      <div class="callout-icon">⚡</div>
+      <div class="callout-text"><strong>Invenção única nacional:</strong> Aurkey é o único player que combina KYC + Open Finance em 1 consentimento granular — regulado pelo BCB como ITP.</div>
+    </div>
+
+    <div class="layer-diagram">
+      <div class="sec-title">Arquitetura de Consentimento</div>
+      <div class="layer-item" style="background:#e8f7f2;border:.5px solid #a8dfd0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:12px;font-weight:600;color:var(--green)">KYC — Níveis 1–2</div><div style="font-size:11px;color:var(--ink-light)">CPF · Biometria · Endereço</div></div>
+          <span class="tag tg">Ativo</span>
+        </div>
+      </div>
+      <div class="layer-arrow">↕ 1 consentimento unificado</div>
+      <div class="layer-item" style="background:#eaf1fb;border:.5px solid #bcd0f0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div><div style="font-size:12px;font-weight:600;color:var(--blue)">Open Finance — Nível 3</div><div style="font-size:11px;color:var(--ink-light)">Renda · Score · Histórico</div></div>
+          <button class="btn-out" style="padding:5px 12px;font-size:12px;width:auto" onclick="document.getElementById('of-modal').classList.add('on')">Conectar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="cw" style="text-align:center">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--ink)">R$8.400</div>
+        <div style="font-size:11px;color:var(--ink-light)">Renda verificada</div>
+      </div>
+      <div class="cw" style="text-align:center">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--green)">782</div>
+        <div style="font-size:11px;color:var(--ink-light)">Score Serasa</div>
+      </div>
+      <div class="cw" style="text-align:center">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--ink)">4,2 anos</div>
+        <div style="font-size:11px;color:var(--ink-light)">Histórico bancário</div>
+      </div>
+      <div class="cw" style="text-align:center">
+        <div style="font-size:18px;margin-bottom:2px">✅</div>
+        <div style="font-size:11px;color:var(--ink-light)">COAF: Limpo</div>
+      </div>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-icon">🚀</div>
+      <div class="callout-text"><strong>Impacto para parceiros:</strong> crédito aprovado em 30 segundos vs. 3 dias no processo tradicional. Elimina dois fluxos separados.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Open Finance Modal -->
+<div id="of-modal" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="of-sheet">
+    <div style="font-size:18px;font-weight:600;margin-bottom:16px">Consentimento Open Finance</div>
+    <div class="tog-row">
+      <div><div class="field-name">Saldo e extrato</div><div class="field-sub">Últimos 12 meses</div></div>
+      <div class="tog on" onclick="toggleEl(this)"></div>
+    </div>
+    <div class="tog-row">
+      <div><div class="field-name">Renda comprovada</div><div class="field-sub">Via Open Finance BCB</div></div>
+      <div class="tog on" onclick="toggleEl(this)"></div>
+    </div>
+    <div class="tog-row">
+      <div><div class="field-name">Score de crédito</div><div class="field-sub">Serasa integrado</div></div>
+      <div class="tog" onclick="toggleEl(this)"></div>
+    </div>
+    <div style="font-size:11px;color:var(--ink-light);margin:12px 0">Regulado pela Resolução BCB 277/2022. Revogável a qualquer momento.</div>
+    <button class="btn-gold" onclick="document.getElementById('of-modal').classList.remove('on')">Autorizar consentimento</button>
+  </div>
+</div>
+
+<!-- ===== SCREEN 6 — EMERGENCY QR ===== -->
+<div id="s6" class="screen">
+  <div class="hdr" style="background:var(--navy)">
+    <span style="font-size:18px;font-weight:600;color:#fff">QR Emergência</span>
+    <div class="icon-btn" onclick="go(1)"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="cd" style="margin-bottom:14px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+        <div class="emr-badge">🚨 EMERGÊNCIA</div>
+        <div id="qr-grid" style="display:grid;grid-template-columns:repeat(5,10px);gap:2px"></div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px">Tipo Sanguíneo</div>
+        <div class="blood-type">O+</div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px">Alergias</div>
+        <div><span class="med-chip" style="background:rgba(216,90,48,.2);border-color:rgba(216,90,48,.4);color:#f0957a">Penicilina ⚠️</span><span class="med-chip">Dipirona (leve)</span></div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px">Medicamentos em uso</div>
+        <div><span class="med-chip">Losartana 50mg</span><span class="med-chip">AAS 100mg</span></div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom-4px">Plano de Saúde</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.8)">Unimed SP · Nº 0012-3456-7890</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:.5px solid rgba(255,255,255,.1)">
+        <div style="font-size:12px;color:rgba(255,255,255,.5)">🫀 Doador de órgãos: <span style="color:var(--green);font-weight:600">SIM</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,.35)">Sem internet · Sem senha</div>
+      </div>
+    </div>
+
+    <div class="cw" style="margin-bottom:14px">
+      <div class="sec-title">Contato de Emergência</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+        <div style="font-size:28px">👩</div>
+        <div><div style="font-size:14px;font-weight:600">Maria Farias (mãe)</div><div style="font-size:13px;color:var(--ink-light)">(11) 9 8765-4321</div></div>
+      </div>
+    </div>
+
+    <button class="btn-out" style="margin-bottom:14px">⬇ Baixar QR para case do celular</button>
+
+    <div class="sec-title">Histórico de Escaneamentos</div>
+    <div class="cw">
+      <div class="scan-item">
+        <div class="list-icon" style="background:#fdf0ec;font-size:14px">🏥</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:500">UPA Vila Mariana</div><div style="font-size:12px;color:var(--ink-light)">Hoje 03:42 · Emergência</div></div>
+        <span class="tag tr">Emrg</span>
+      </div>
+      <div class="scan-item" style="border-bottom:none">
+        <div class="list-icon" style="background:#e3f2fd;font-size:14px">💊</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:500">Drogasil Paulista</div><div style="font-size:12px;color:var(--ink-light)">Ontem 15:20 · Farmácia</div></div>
+        <span class="tag tb">Farm</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 7 — DID ===== -->
+<div id="s7" class="screen">
+  <div class="hdr">
+    <span style="font-size:18px;font-weight:600">Credencial DID</span>
+    <div class="icon-btn" onclick="go(1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="did-card">
+      <div class="did-badge">Aurkey Verifiable Credential</div>
+      <div class="did-name">Daniel Farias</div>
+      <div class="did-id">DID: aurkey:br:AK-8f3a9c2d7b1e</div>
+      <div class="grid2" style="margin-bottom:14px">
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em">Nível</div>
+          <div style="font-size:16px;font-weight:600;color:#fff;margin-top:2px">Nível 2</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em">Status</div>
+          <div style="font-size:16px;font-weight:600;color:var(--green);margin-top:2px">Válida ✓</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em">Emissor</div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">Aurkey BR</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px">
+          <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em">Emitida</div>
+          <div style="font-size:13px;font-weight:600;color:#fff;margin-top:2px">Jun 2026</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Hash Blockchain</div>
+      <div class="did-hash">0x9f3a8c2d4b7e1f6a5c9d2e8b3f7a4c1d0e9b2f5a8c3d6e1b4f7a0c3d6e9b2f5</div>
+    </div>
+
+    <div class="sec-title">Cobertura LATAM</div>
+    <div class="country-grid">
+      <div class="country-item active"><div class="country-flag">🇧🇷</div><div style="font-size:11px;font-weight:600">Brasil</div><div class="country-status" style="color:var(--green)">Nativo</div></div>
+      <div class="country-item"><div class="country-flag">🇦🇷</div><div style="font-size:11px;font-weight:600">Argentina</div><div class="country-status">Homologação</div></div>
+      <div class="country-item"><div class="country-flag">🇨🇴</div><div style="font-size:11px;font-weight:600">Colômbia</div><div class="country-status">Homologação</div></div>
+      <div class="country-item soon"><div class="country-flag">🇲🇽</div><div style="font-size:11px;font-weight:600">México</div><div class="country-status">Q3 2026</div></div>
+      <div class="country-item soon"><div class="country-flag">🇨🇱</div><div style="font-size:11px;font-weight:600">Chile</div><div class="country-status">Q3 2026</div></div>
+      <div class="country-item soon"><div class="country-flag">🇵🇪</div><div style="font-size:11px;font-weight:600">Peru</div><div class="country-status">Q4 2026</div></div>
+    </div>
+
+    <div class="callout gold" style="margin-bottom:16px">
+      <div class="callout-icon">🔏</div>
+      <div class="callout-text"><strong>Zero Knowledge Proof:</strong> prove que tem mais de 18 anos sem revelar sua data de nascimento. Padrão W3C/DID — mesmo do eIDAS 2.0 europeu.</div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn-out" style="flex:1">⬇ Baixar</button>
+      <button class="btn-gold" style="flex:1">Compartilhar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 8 — GOLD ===== -->
+<div id="s8" class="screen">
+  <div class="hdr">
+    <span style="font-size:18px;font-weight:600">Aurkey Gold</span>
+    <div class="icon-btn" onclick="go(1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="gold-hero">
+      <div class="gold-label">Seu saldo atual</div>
+      <div class="gold-tier" id="gold-display">4.200</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:12px">pontos</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:8px">👑 Gold → 💎 Platinum em <span style="color:var(--gold)">3.300 pts</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="gold-prog" style="width:56%"></div></div>
+    </div>
+
+    <div class="sec-title">Missões Ativas</div>
+
+    <div class="mission-item" id="m-selfie" onclick="completeMission('m-selfie',1200,'Selfie Biométrica completa!')">
+      <div style="font-size:24px">🤳</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">Selfie biométrica</div><div style="font-size:12px;color:var(--ink-light)">Verificação facial completa</div></div>
+      <div class="mission-pts">+1.200</div>
+    </div>
+
+    <div class="mission-item" id="m-of" onclick="completeMission('m-of',2000,'Open Finance conectado!')">
+      <div style="font-size:24px">🏦</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">Conectar Open Finance</div><div style="font-size:12px;color:var(--ink-light)">Vincular conta bancária</div></div>
+      <div class="mission-pts">+2.000</div>
+    </div>
+
+    <div class="mission-item" id="m-auth" onclick="completeMission('m-auth',500,'1ª autorização feita!')">
+      <div style="font-size:24px">✅</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">1ª autorização</div><div style="font-size:12px;color:var(--ink-light)">Compartilhar com parceiro</div></div>
+      <div class="mission-pts">+500</div>
+    </div>
+
+    <div class="mission-item" id="m-ind" onclick="completeMission('m-ind',300,'Indicação enviada!')">
+      <div style="font-size:24px">👥</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">Indicar um amigo</div><div style="font-size:12px;color:var(--ink-light)">Ambos ganham pontos</div></div>
+      <div class="mission-pts">+300</div>
+    </div>
+
+    <div class="mission-item mission-special" id="m-latam" onclick="completeMission('m-latam',5000,'Desafio LATAM Pass completo!')">
+      <div style="font-size:24px">✈️</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500;color:#fff">LATAM Pass</div><div style="font-size:12px;color:rgba(255,255,255,.45)">Desafio Ouro parceiro</div></div>
+      <div class="mission-pts">+5.000</div>
+    </div>
+
+    <div class="sec-title" style="margin-top:16px">Resgatar Pontos</div>
+
+    <div class="reward-item">
+      <div class="reward-logo" style="background:#e3f2fd">✈️</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">LATAM Pass — 500 milhas</div><div style="font-size:12px;color:var(--ink-light)">2.000 pts</div></div>
+      <button class="reward-btn">Resgatar</button>
+    </div>
+    <div class="reward-item">
+      <div class="reward-logo" style="background:#fff3e0">🟠</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">GOL Smiles — 600 milhas</div><div style="font-size:12px;color:var(--ink-light)">2.000 pts</div></div>
+      <button class="reward-btn">Resgatar</button>
+    </div>
+    <div class="reward-item">
+      <div class="reward-logo" style="background:#fce4ec">💜</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">Nubank — cashback R$15</div><div style="font-size:12px;color:var(--ink-light)">1.500 pts</div></div>
+      <button class="reward-btn">Resgatar</button>
+    </div>
+    <div class="reward-item">
+      <div class="reward-logo" style="background:#fff8e1">📦</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">Amazon — gift card R$10</div><div style="font-size:12px;color:var(--ink-light)">1.000 pts</div></div>
+      <button class="reward-btn">Resgatar</button>
+    </div>
+    <div class="reward-item" style="border-bottom:none">
+      <div class="reward-logo" style="background:#fff3e0">🍔</div>
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">iFood — R$15</div><div style="font-size:12px;color:var(--ink-light)">1.200 pts</div></div>
+      <button class="reward-btn">Resgatar</button>
+    </div>
+  </div>
+
+  <!-- Celebration overlay -->
+  <div id="celebrate">
+    <div class="cel-box">
+      <div class="cel-trophy">🏆</div>
+      <div class="cel-title" id="cel-title">Missão completa!</div>
+      <div class="cel-pts" id="cel-pts">+1.200 pts</div>
+      <div style="font-size:13px;color:var(--ink-light);margin:8px 0 16px">Saldo: <strong id="cel-balance" style="color:var(--ink)">4.200 pts</strong></div>
+      <button class="btn-gold" onclick="document.getElementById('celebrate').classList.remove('on')">Continuar 🎉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 9 — COPILOT ===== -->
+<div id="s9" class="screen">
+  <div class="hdr">
+    <div class="copilot-hdr" style="margin-bottom:0">
+      <div class="live-dot"></div>
+      <span style="font-size:18px;font-weight:600">Compliance Copilot</span>
+    </div>
+    <div class="icon-btn" onclick="go(1)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+    <div class="callout gold" style="margin-bottom:12px">
+      <div class="callout-icon">📚</div>
+      <div class="callout-text">
+        <strong>Regulações indexadas:</strong>
+        <div class="msg-chips" style="margin-top:6px">
+          <span class="msg-chip">BCB 3.978/2020</span>
+          <span class="msg-chip">COAF IN 161</span>
+          <span class="msg-chip">LGPD 13.709</span>
+          <span class="msg-chip">CMN 4.893/2021</span>
+          <span class="msg-chip">BCB 277/2022</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-title">Perguntas Frequentes</div>
+    <div class="quick-q">
+      <div class="qq" onclick="sendQ('PEP')">PEP</div>
+      <div class="qq" onclick="sendQ('LGPD')">LGPD</div>
+      <div class="qq" onclick="sendQ('COAF')">COAF</div>
+      <div class="qq" onclick="sendQ('Open Finance')">Open Finance</div>
+    </div>
+
+    <div class="chat-area">
+      <div class="chat-msgs" id="chat-msgs">
+        <div class="msg ai">
+          Olá! Sou o Compliance Copilot da Aurkey. Fui treinado nas principais regulações do mercado financeiro brasileiro. Pergunte sobre PEP, LGPD, COAF, Open Finance ou qualquer obrigação regulatória.
+          <div class="msg-chips"><span class="msg-chip">BCB 3.978/2020</span><span class="msg-chip">LGPD</span></div>
+        </div>
+      </div>
+      <div class="chat-input">
+        <input type="text" placeholder="Pergunte sobre regulação..." id="chat-in" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCREEN 10 — B2B ===== -->
+<div id="s10" class="screen">
+  <div class="hdr" style="background:var(--navy)">
+    <span style="font-size:17px;font-weight:600;color:#fff">Aurkey for Business</span>
+    <div class="icon-btn" onclick="go(0)"><svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="1.8"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+  <div class="pips" id="b-pips" style="background:var(--navy);padding-bottom:14px">
+    <div class="pip done" id="bp0" style="background:var(--gold)"></div>
+    <div class="pip" id="bp1"></div>
+    <div class="pip" id="bp2"></div>
+    <div class="pip" id="bp3"></div>
+  </div>
+  <div class="scroll" style="padding-top:14px">
+
+    <!-- B2B Step 1 -->
+    <div class="b2b-step on" id="bs1">
+      <div class="step-title">Dados da empresa</div>
+      <div class="input-wrap">
+        <div class="input-label">Razão Social</div>
+        <input class="input-field" type="text" placeholder="Nome Ltda.">
+      </div>
+      <div class="input-wrap">
+        <div class="input-label">CNPJ</div>
+        <input class="input-field" type="text" placeholder="00.000.000/0001-00">
+      </div>
+      <div class="input-wrap">
+        <div class="input-label">Setor</div>
+        <select class="input-field" style="appearance:none">
+          <option>Banco / Fintech</option>
+          <option>Imobiliária</option>
+          <option>Saúde</option>
+          <option>E-commerce</option>
+          <option>Seguros</option>
+        </select>
+      </div>
+      <div class="input-wrap">
+        <div class="input-label">Website</div>
+        <input class="input-field" type="text" placeholder="https://empresa.com.br">
+      </div>
+      <div class="input-wrap">
+        <div class="input-label">E-mail técnico</div>
+        <input class="input-field" type="email" placeholder="dev@empresa.com.br">
+      </div>
+      <button class="btn-gold" onclick="nextB2B(2)">Continuar →</button>
+    </div>
+
+    <!-- B2B Step 2 -->
+    <div class="b2b-step" id="bs2">
+      <div class="step-title">Escolha o plano</div>
+
+      <div class="plan-card" id="plan-starter" onclick="selPlan('starter')" style="margin-bottom:10px">
+        <div class="plan-check">✓</div>
+        <div class="plan-name">Starter</div>
+        <div><span class="plan-price">R$2.900</span><span class="plan-period">/mês</span></div>
+        <div style="font-size:12px;color:var(--ink-light);margin-top:6px">500 validações · Níveis 1–2 · Suporte e-mail</div>
+      </div>
+
+      <div class="plan-card sel" id="plan-business" onclick="selPlan('business')" style="margin-bottom:10px">
+        <div class="plan-check">✓</div>
+        <div class="plan-rec">Recomendado</div>
+        <div class="plan-name">Business</div>
+        <div><span class="plan-price">R$9.900</span><span class="plan-period">/mês</span></div>
+        <div style="font-size:12px;color:var(--ink-light);margin-top:6px">2.500 validações · Níveis 1–3 · API + Webhook · Suporte prioritário</div>
+      </div>
+
+      <div class="plan-card" id="plan-enterprise" onclick="selPlan('enterprise')" style="margin-bottom:14px">
+        <div class="plan-check">✓</div>
+        <div class="plan-name">Enterprise</div>
+        <div><span class="plan-price" style="font-size:20px">Sob consulta</span></div>
+        <div style="font-size:12px;color:var(--ink-light);margin-top:6px">Ilimitado · Níveis 1–5 · SLA 99,9% · Gerente dedicado</div>
+      </div>
+
+      <button class="btn-gold" onclick="nextB2B(3)">Continuar →</button>
+      <button class="btn-out" onclick="nextB2B(1)">Voltar</button>
+    </div>
+
+    <!-- B2B Step 3 -->
+    <div class="b2b-step" id="bs3">
+      <div class="step-title">Configurar integração</div>
+
+      <div class="sec-title">API Key</div>
+      <div class="api-key-box" style="margin-bottom:14px">
+        <div class="api-key-val">ak_live_8f3a9c2d7b1e4f6a5c9d2e8b3f7...</div>
+        <button class="api-copy" onclick="this.textContent='Copiado!'">Copiar</button>
+      </div>
+
+      <div class="input-wrap">
+        <div class="input-label">URL de Webhook</div>
+        <input class="input-field" type="text" placeholder="https://sua-api.com/aurkey/webhook">
+      </div>
+
+      <div class="cw" style="margin-bottom:14px">
+        <div class="sec-title">Eventos de Webhook</div>
+        <div class="tog-row">
+          <div><div class="field-name">identity.approved</div></div>
+          <div class="tog on" onclick="toggleEl(this)"></div>
+        </div>
+        <div class="tog-row">
+          <div><div class="field-name">trust_score.updated</div></div>
+          <div class="tog on" onclick="toggleEl(this)"></div>
+        </div>
+        <div class="tog-row">
+          <div><div class="field-name">access.revoked</div></div>
+          <div class="tog" onclick="toggleEl(this)"></div>
+        </div>
+        <div class="tog-row">
+          <div><div class="field-name">kya.unauthorized_attempt</div></div>
+          <div class="tog on" onclick="toggleEl(this)"></div>
+        </div>
+      </div>
+
+      <button class="btn-gold" onclick="nextB2B(4)">Finalizar cadastro →</button>
+      <button class="btn-out" onclick="nextB2B(2)">Voltar</button>
+    </div>
+
+    <!-- B2B Step 4 -->
+    <div class="b2b-step" id="bs4">
+      <div style="text-align:center;padding:24px 0">
+        <div class="check-big">✅</div>
+        <div class="step-title" style="text-align:center">Parceiro cadastrado!</div>
+        <div class="step-sub" style="text-align:center;margin-top:6px">Seu CSM entrará em contato em até 24h.</div>
+      </div>
+
+      <div class="cw" style="margin-bottom:14px">
+        <div class="check-item"><div style="font-size:13px;color:var(--ink-light)">Plano</div><div style="font-size:14px;font-weight:600;margin-left:auto">Business</div></div>
+        <div class="check-item"><div style="font-size:13px;color:var(--ink-light)">Validações</div><div style="font-size:14px;font-weight:600;margin-left:auto">2.500/mês</div></div>
+        <div class="check-item"><div style="font-size:13px;color:var(--ink-light)">Níveis</div><div style="font-size:14px;font-weight:600;margin-left:auto">1–3</div></div>
+        <div class="check-item"><div style="font-size:13px;color:var(--ink-light)">Trust Score</div><span class="tag tg" style="margin-left:auto">Incluído</span></div>
+        <div class="check-item" style="border-bottom:none"><div style="font-size:13px;color:var(--ink-light)">KYA</div><span class="tag tg" style="margin-left:auto">Incluído</span></div>
+      </div>
+
+      <div class="callout gold" style="margin-bottom:16px">
+        <div class="callout-icon">🚀</div>
+        <div class="callout-text"><strong>Próximos passos:</strong> SDK → sandbox → produção → CSM em 24h</div>
+      </div>
+
+      <button class="btn-gold" onclick="go(1)">Ir para o painel</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- #phone -->
+
+<script>
+let goldPts = 4200;
+let shareTimer = 298;
+
+function go(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById('s'+n).classList.add('on');
+  if(n===4) startTimer();
+}
+
+// Verification flow
+function nextVerify(step) {
+  document.querySelectorAll('.verify-step').forEach(s => s.classList.remove('on'));
+  document.getElementById('vs'+step).classList.add('on');
+  ['vp0','vp1','vp2','vp3'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('done', i < step);
+  });
+}
+
+function maskCPF(el) {
+  let v = el.value.replace(/\D/g,'');
+  if(v.length>11)v=v.slice(0,11);
+  v=v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  el.value=v;
+}
+
+let docsDone = {front:false,back:false};
+function captureDoc(id, label) {
+  const el = document.getElementById(id);
+  el.classList.add('done');
+  el.innerHTML = `<div style="font-size:28px">✅</div><div class="doc-capture-label">${label}</div>`;
+  docsDone[id==='doc-front'?'front':'back'] = true;
+  if(docsDone.front && docsDone.back) {
+    const btn = document.getElementById('doc-next');
+    btn.disabled = false; btn.style.opacity='1';
+  }
+}
+
+let selfieDone = false;
+function captureSelfie() {
+  if(selfieDone) return;
+  selfieDone = true;
+  const ring = document.getElementById('selfie-ring');
+  const icon = document.getElementById('selfie-icon');
+  const hint = document.getElementById('selfie-hint');
+  const btn = document.getElementById('selfie-next');
+  ring.classList.add('done');
+  icon.textContent = '✅';
+  hint.textContent = 'Selfie capturada — Continuar ✓';
+  btn.disabled = false; btn.style.opacity='1';
+  btn.textContent = 'Selfie capturada — Continuar ✓';
+}
+
+// B2B flow
+function nextB2B(step) {
+  document.querySelectorAll('.b2b-step').forEach(s => s.classList.remove('on'));
+  document.getElementById('bs'+step).classList.add('on');
+  ['bp0','bp1','bp2','bp3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if(i < step) { el.style.background = 'var(--gold)'; }
+    else { el.style.background = 'rgba(255,255,255,.2)'; }
+  });
+}
+
+function selPlan(plan) {
+  ['starter','business','enterprise'].forEach(p => {
+    document.getElementById('plan-'+p).classList.remove('sel');
+  });
+  document.getElementById('plan-'+plan).classList.add('sel');
+}
+
+// Toggle
+function toggleEl(el) { el.classList.toggle('on'); }
+
+// Share timer
+let timerInt;
+function startTimer() {
+  clearInterval(timerInt);
+  shareTimer = 298;
+  timerInt = setInterval(() => {
+    if(shareTimer <= 0) { clearInterval(timerInt); return; }
+    shareTimer--;
+    const m = Math.floor(shareTimer/60).toString().padStart(2,'0');
+    const s = (shareTimer%60).toString().padStart(2,'0');
+    const el = document.getElementById('share-timer');
+    if(el) el.textContent = m+':'+s;
+  }, 1000);
+}
+
+function authorizeShare() {
+  const btn = document.getElementById('auth-btn');
+  btn.textContent = '✅ Acesso autorizado!';
+  btn.style.background = 'var(--green)';
+  setTimeout(() => go(3), 1800);
+}
+
+// Gold missions
+function completeMission(id, pts, title) {
+  const el = document.getElementById(id);
+  if(el.classList.contains('done')) return;
+  el.classList.add('done');
+  el.style.opacity = '.6';
+  el.style.cursor = 'default';
+
+  goldPts += pts;
+  document.getElementById('gold-display').textContent = goldPts.toLocaleString('pt-BR');
+  const pct = Math.min((goldPts/7500)*100, 100);
+  document.getElementById('gold-prog').style.width = pct+'%';
+
+  document.getElementById('cel-title').textContent = title;
+  document.getElementById('cel-pts').textContent = '+'+pts.toLocaleString('pt-BR')+' pts';
+  document.getElementById('cel-balance').textContent = goldPts.toLocaleString('pt-BR')+' pts';
+  document.getElementById('celebrate').classList.add('on');
+}
+
+// Chat
+const replies = {
+  'pep': {
+    text: 'Pessoa Politicamente Exposta: monitoramento reforçado obrigatório. Operações acima de R$10K exigem revisão manual. Atualização semestral obrigatória do perfil.',
+    chips: ['Art.23 BCB 3.978/2020','Revisão semestral','R$10K threshold']
+  },
+  'lgpd': {
+    text: 'Base legal para biometria: legítimo interesse + consentimento explícito (art.11 LGPD). DPIA obrigatória antes de processar. Retenção máxima: 5 anos. Notificação ANPD em 72h em caso de incidente.',
+    chips: ['LGPD 13.709/2018','DPIA obrigatória','ANPD 2023','Art.11 dado sensível']
+  },
+  'coaf': {
+    text: 'Comunicação ao COAF via SISCOAF em até 24h para operações suspeitas. Operações em espécie ≥ R$50K: comunicação automática. Guarde registros por 5 anos.',
+    chips: ['COAF IN 161/2023','SISCOAF 24h','R$50K espécie']
+  },
+  'open finance': {
+    text: 'Aurkey opera como ITP (Iniciador de Transação de Pagamento). Licença via Resolução BCB 277/2022. Diretório de Participantes do Open Finance Brasil. Consentimento revogável individualmente por instituição.',
+    chips: ['BCB 277/2022','ITP','Diretório BCB']
+  }
+};
+
+// QR pattern render (replaces document.write)
+function renderQR() {
+  const el = document.getElementById('qr-grid');
+  if (!el) return;
+  const qrP=[1,1,1,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,1,1,1,1,1,1,0,0,0,0,1,0,1,0,1,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,0,0,1,1,1,0,1,1,1,0,1,1,1,1,1,0,0,0,0,0,1,0,1,0,1,0,0,0,1,1,0,1,1];
+  el.innerHTML = qrP.map(v=>`<div style="width:10px;height:10px;background:${v?'#fff':'transparent'};border-radius:1px"></div>`).join('');
+}
+document.addEventListener('DOMContentLoaded', renderQR);
+
+function sendQ(q) {
+  document.getElementById('chat-in').value = q;
+  sendChat();
+}
+
+function sendChat() {
+  const inp = document.getElementById('chat-in');
+  const msgs = document.getElementById('chat-msgs');
+  const txt = inp.value.trim();
+  if(!txt) return;
+
+  msgs.innerHTML += `<div class="msg user">${txt}</div>`;
+  inp.value = '';
+
+  setTimeout(() => {
+    const key = Object.keys(replies).find(k => txt.toLowerCase().includes(k));
+    const r = key ? replies[key] : {
+      text: 'Boa pergunta. Para uma análise precisa, consulte as circulares BCB e resoluções CMN aplicáveis ao seu caso de uso. Posso detalhar alguma regulação específica?',
+      chips: ['BCB 3.978/2020','LGPD','CMN 4.893']
+    };
+    const chips = r.chips.map(c=>`<span class="msg-chip">${c}</span>`).join('');
+    msgs.innerHTML += `<div class="msg ai">${r.text}<div class="msg-chips">${chips}</div></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 700);
+
+  msgs.scrollTop = msgs.scrollHeight;
+}
+</script>
+</body>
+</html>
