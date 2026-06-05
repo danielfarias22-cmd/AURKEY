@@ -785,13 +785,7 @@ body{background:#e8e4de;display:flex;justify-content:center;align-items:center;m
     <div class="cd" style="margin-bottom:14px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
         <div class="emr-badge">🚨 EMERGÊNCIA</div>
-        <div style="display:grid;grid-template-columns:repeat(5,10px);gap:2px">
-          <!-- QR pattern visual -->
-          <script>
-          const qrP=[1,1,1,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,1,1,1,1,1,1,0,0,0,0,1,0,1,0,1,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,0,0,1,1,1,0,1,1,1,0,1,1,1,1,1,0,0,0,0,0,1,0,1,0,1,0,0,0,1,1,0,1,1];
-          document.write(qrP.map(v=>`<div style="width:10px;height:10px;background:${v?'#fff':'transparent'};border-radius:1px"></div>`).join(''));
-          </script>
-        </div>
+        <div id="qr-grid" style="display:grid;grid-template-columns:repeat(5,10px);gap:2px"></div>
       </div>
 
       <div style="margin-bottom:16px">
@@ -1315,6 +1309,15 @@ const replies = {
     chips: ['BCB 277/2022','ITP','Diretório BCB']
   }
 };
+
+// QR pattern render (replaces document.write)
+function renderQR() {
+  const el = document.getElementById('qr-grid');
+  if (!el) return;
+  const qrP=[1,1,1,1,1,1,0,1,0,1,1,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,1,1,1,1,1,1,0,0,0,0,1,0,1,0,1,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0,0,1,0,1,1,0,0,0,1,1,1,0,1,1,1,0,1,1,1,1,1,0,0,0,0,0,1,0,1,0,1,0,0,0,1,1,0,1,1];
+  el.innerHTML = qrP.map(v=>`<div style="width:10px;height:10px;background:${v?'#fff':'transparent'};border-radius:1px"></div>`).join('');
+}
+document.addEventListener('DOMContentLoaded', renderQR);
 
 function sendQ(q) {
   document.getElementById('chat-in').value = q;
