@@ -227,6 +227,19 @@
   .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary)}
   .legend-dot{width:8px;height:8px;border-radius:3px}
 
+  /* ===== MAPA DE CALOR ===== */
+  .map-wrap{margin:4px 0 2px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border-soft);background:radial-gradient(120% 100% at 15% 100%,rgba(59,130,246,.05),transparent 60%),var(--bg-1)}
+  .map-svg{width:100%;height:auto;display:block;aspect-ratio:100/102;touch-action:manipulation}
+  .zona-grupo{cursor:pointer}
+  .zona-blob{transition:r .2s ease}
+  .zona-blob.selecionada{stroke:#fff;stroke-width:0.9;stroke-opacity:.9}
+  .zona-pulso{fill:none;stroke-width:0.6;opacity:.6;animation:zonaPulso 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes zonaPulso{0%{transform:scale(.65);opacity:.65}100%{transform:scale(1.7);opacity:0}}
+  .zona-evento-dot{fill:var(--purple);stroke:var(--bg-1);stroke-width:0.6}
+  .zona-label{font-family:var(--font-mono);font-size:3.6px;fill:var(--text-secondary);text-transform:uppercase;letter-spacing:.03em;pointer-events:none}
+  .zona-label.ativa{fill:var(--text-primary);font-weight:700}
+  .compass-label{font-family:var(--font-mono);font-size:5px;fill:var(--text-tertiary);font-weight:700}
+
   /* ===== PAYWALL ===== */
   .paywall-card{position:relative;border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(245,197,24,.3);background:linear-gradient(160deg,rgba(245,197,24,.09),var(--bg-1) 60%)}
   .paywall-inner{padding:22px 18px;text-align:center}
@@ -897,6 +910,293 @@ function calcularRankingBairros(date) {
   };
 }
 
+// --- 3.2b Mapa de calor por zona -----------------------------------------
+// Registro geográfico simplificado (mapa tático, não cartográfico): cada
+// zona tem uma posição percentual (x,y) num canvas estilizado orientado
+// como a cidade real (rio/Guaíba a sudoeste, Zona Norte/aeroporto ao norte,
+// Zona Sul ao sul), e um "perfil" de uso do solo que determina como a
+// demanda oscila ao longo do dia.
+const ZONAS_MAPA = [{
+  id: 'centro',
+  nome: 'Centro Histórico',
+  x: 30,
+  y: 46,
+  perfil: 'corporativo-comercial'
+}, {
+  id: 'cidade-baixa',
+  nome: 'Cidade Baixa',
+  x: 35,
+  y: 53,
+  perfil: 'boemio'
+}, {
+  id: 'moinhos',
+  nome: 'Moinhos de Vento',
+  x: 33,
+  y: 34,
+  perfil: 'corporativo-alto-padrao'
+}, {
+  id: 'auxiliadora',
+  nome: 'Auxiliadora',
+  x: 37,
+  y: 29,
+  perfil: 'comercial-servicos'
+}, {
+  id: 'bela-vista',
+  nome: 'Bela Vista',
+  x: 42,
+  y: 22,
+  perfil: 'boemio-alto-padrao'
+}, {
+  id: 'menino-deus',
+  nome: 'Menino Deus',
+  x: 40,
+  y: 59,
+  perfil: 'residencial-misto'
+}, {
+  id: 'praia-belas',
+  nome: 'Praia de Belas',
+  x: 33,
+  y: 63,
+  perfil: 'comercial-shopping'
+}, {
+  id: 'barra-sul',
+  nome: 'BarraShoppingSul',
+  x: 37,
+  y: 67,
+  perfil: 'comercial-shopping'
+}, {
+  id: 'cristal',
+  nome: 'Cristal',
+  x: 38,
+  y: 74,
+  perfil: 'residencial-esportivo'
+}, {
+  id: 'zona-sul',
+  nome: 'Zona Sul (Ipanema/Tristeza)',
+  x: 30,
+  y: 87,
+  perfil: 'residencial'
+}, {
+  id: 'partenon',
+  nome: 'Partenon',
+  x: 61,
+  y: 47,
+  perfil: 'universitario-eventos'
+}, {
+  id: 'farroupilha',
+  nome: 'Farroupilha',
+  x: 44,
+  y: 40,
+  perfil: 'entretenimento'
+}, {
+  id: 'humaita',
+  nome: 'Humaitá',
+  x: 50,
+  y: 17,
+  perfil: 'entretenimento-esportivo'
+}, {
+  id: 'aeroporto',
+  nome: 'Aeroporto Salgado Filho',
+  x: 80,
+  y: 12,
+  perfil: 'aeroportuario'
+}];
+// Mapeia o texto de "bairro" usado em eventos/concursos para o id da zona no mapa.
+const BAIRRO_PARA_ZONA = ZONAS_MAPA.reduce((acc, z) => {
+  acc[z.nome] = z.id;
+  return acc;
+}, {});
+
+// Nota-base (1–5) por perfil de zona em cada faixa horária — dia de semana.
+const PERFIL_PESOS = {
+  'corporativo-comercial': {
+    amanhecer: 2,
+    'rush-matinal': 5,
+    'meio-manha': 3,
+    almoco: 4,
+    'vale-tarde': 2,
+    'rush-noturno': 5,
+    noite: 2,
+    madrugada: 1
+  },
+  'corporativo-alto-padrao': {
+    amanhecer: 2,
+    'rush-matinal': 4,
+    'meio-manha': 3,
+    almoco: 3,
+    'vale-tarde': 2,
+    'rush-noturno': 4,
+    noite: 3,
+    madrugada: 1
+  },
+  'boemio': {
+    amanhecer: 1,
+    'rush-matinal': 1,
+    'meio-manha': 1,
+    almoco: 2,
+    'vale-tarde': 2,
+    'rush-noturno': 3,
+    noite: 5,
+    madrugada: 4
+  },
+  'boemio-alto-padrao': {
+    amanhecer: 1,
+    'rush-matinal': 1,
+    'meio-manha': 2,
+    almoco: 3,
+    'vale-tarde': 2,
+    'rush-noturno': 4,
+    noite: 5,
+    madrugada: 3
+  },
+  'residencial': {
+    amanhecer: 2,
+    'rush-matinal': 3,
+    'meio-manha': 2,
+    almoco: 2,
+    'vale-tarde': 2,
+    'rush-noturno': 4,
+    noite: 2,
+    madrugada: 1
+  },
+  'residencial-misto': {
+    amanhecer: 2,
+    'rush-matinal': 3,
+    'meio-manha': 2,
+    almoco: 3,
+    'vale-tarde': 2,
+    'rush-noturno': 4,
+    noite: 2,
+    madrugada: 1
+  },
+  'residencial-esportivo': {
+    amanhecer: 1,
+    'rush-matinal': 2,
+    'meio-manha': 2,
+    almoco: 2,
+    'vale-tarde': 2,
+    'rush-noturno': 3,
+    noite: 2,
+    madrugada: 1
+  },
+  'comercial-shopping': {
+    amanhecer: 1,
+    'rush-matinal': 2,
+    'meio-manha': 3,
+    almoco: 4,
+    'vale-tarde': 4,
+    'rush-noturno': 3,
+    noite: 2,
+    madrugada: 1
+  },
+  'comercial-servicos': {
+    amanhecer: 1,
+    'rush-matinal': 3,
+    'meio-manha': 3,
+    almoco: 3,
+    'vale-tarde': 3,
+    'rush-noturno': 3,
+    noite: 2,
+    madrugada: 1
+  },
+  'aeroportuario': {
+    amanhecer: 4,
+    'rush-matinal': 3,
+    'meio-manha': 2,
+    almoco: 1,
+    'vale-tarde': 3,
+    'rush-noturno': 4,
+    noite: 3,
+    madrugada: 3
+  },
+  'entretenimento': {
+    amanhecer: 1,
+    'rush-matinal': 1,
+    'meio-manha': 1,
+    almoco: 1,
+    'vale-tarde': 2,
+    'rush-noturno': 2,
+    noite: 3,
+    madrugada: 2
+  },
+  'entretenimento-esportivo': {
+    amanhecer: 1,
+    'rush-matinal': 1,
+    'meio-manha': 1,
+    almoco: 1,
+    'vale-tarde': 2,
+    'rush-noturno': 2,
+    noite: 2,
+    madrugada: 1
+  },
+  'universitario-eventos': {
+    amanhecer: 1,
+    'rush-matinal': 3,
+    'meio-manha': 3,
+    almoco: 2,
+    'vale-tarde': 2,
+    'rush-noturno': 3,
+    noite: 1,
+    madrugada: 1
+  }
+};
+function calcularNotaBaseZona(perfil, faixaId, sextaOuSabado) {
+  const pesos = PERFIL_PESOS[perfil] || PERFIL_PESOS['residencial'];
+  let nota = pesos[faixaId] != null ? pesos[faixaId] : 2;
+  const janelaNoturna = faixaId === 'rush-noturno' || faixaId === 'noite' || faixaId === 'madrugada';
+  if (sextaOuSabado && janelaNoturna) {
+    if (perfil.startsWith('boemio') || perfil.startsWith('entretenimento')) nota = Math.min(5, nota + 1.5);
+    if (perfil.startsWith('corporativo')) nota = Math.max(1, nota - 1.5);
+  }
+  return nota;
+}
+function nivelPorNota(nota) {
+  if (nota >= 4.3) return 'Explosiva';
+  if (nota >= 3.2) return 'Alta';
+  if (nota >= 2.0) return 'Média';
+  return 'Baixa';
+}
+// Calcula a intensidade de demanda de TODAS as zonas do mapa para o instante
+// atual, cruzando o perfil de uso do solo com eventos/concursos de hoje.
+function calcularCalorZonas(date, eventosHoje = [], concursoHoje = null) {
+  const hora = date.getHours();
+  const dia = date.getDay();
+  const faixa = faixaHorariaAtual(hora);
+  const sextaOuSabado = dia === 5 || dia === 6;
+  const eventosPorZona = {};
+  eventosHoje.forEach(ev => {
+    const zonaId = BAIRRO_PARA_ZONA[ev.bairro];
+    if (zonaId) eventosPorZona[zonaId] = eventosPorZona[zonaId] || [];
+    if (zonaId) eventosPorZona[zonaId].push(ev);
+  });
+  const zonaConcurso = concursoHoje ? BAIRRO_PARA_ZONA[concursoHoje.zonaBairro] : null;
+  const zonas = ZONAS_MAPA.map(z => {
+    let nota = calcularNotaBaseZona(z.perfil, faixa.id, sextaOuSabado);
+    const eventosDaZona = eventosPorZona[z.id] || [];
+    let motivoEvento = null;
+    if (eventosDaZona.length > 0) {
+      const maisForte = eventosDaZona.reduce((a, b) => maiorDemanda(a.demanda, b.demanda) === a.demanda ? a : b);
+      nota = Math.max(nota, maisForte.demanda === 'Explosiva' ? 5 : maisForte.demanda === 'Alta' ? 4.4 : 3.4);
+      motivoEvento = maisForte.nome;
+    }
+    if (zonaConcurso === z.id) {
+      nota = 5;
+      motivoEvento = concursoHoje.nome;
+    }
+    return {
+      ...z,
+      nota,
+      nivel: nivelPorNota(nota),
+      evento: motivoEvento
+    };
+  });
+  zonas.sort((a, b) => b.nota - a.nota);
+  return {
+    faixa,
+    zonas
+  };
+}
+
 // --- 3.3 Inteligência do dia (calendário puro, sem API) -----------------
 function calcularCicloPagamento(date) {
   const dia = date.getDate();
@@ -1253,6 +1553,7 @@ function gerarDadosDemonstracao(hoje) {
     banca: 'FUNDATEC',
     candidatos: '~28.000',
     locais: 'Múltiplos campi (PUCRS, UFRGS, Ritter dos Reis)',
+    zonaBairro: 'Partenon',
     horarios: {
       entrada: '13:00–13:30',
       saida: '17:30 (encerramento único)'
@@ -1264,6 +1565,7 @@ function gerarDadosDemonstracao(hoje) {
     banca: 'Cebraspe',
     candidatos: '~45.000',
     locais: 'Rede de escolas e universidades conveniadas na Capital',
+    zonaBairro: 'Centro Histórico',
     horarios: {
       entrada: '07:30–08:00 (manhã) e 13:30–14:00 (tarde)',
       saida: '12:00 e 18:00'
@@ -1477,6 +1779,26 @@ function Icon({
         d: "M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13 6 9Z"
       }), /*#__PURE__*/React.createElement("path", {
         d: "M10 19a2 2 0 0 0 4 0"
+      }));
+    case 'map':
+      return /*#__PURE__*/React.createElement("svg", p, /*#__PURE__*/React.createElement("path", {
+        d: "M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Z"
+      }), /*#__PURE__*/React.createElement("path", {
+        d: "M9 4v13M15 6.5v13"
+      }));
+    case 'crosshair':
+      return /*#__PURE__*/React.createElement("svg", p, /*#__PURE__*/React.createElement("circle", {
+        cx: "12",
+        cy: "12",
+        r: "7.5"
+      }), /*#__PURE__*/React.createElement("circle", {
+        cx: "12",
+        cy: "12",
+        r: "1.6",
+        fill: "currentColor",
+        stroke: "none"
+      }), /*#__PURE__*/React.createElement("path", {
+        d: "M12 2v3M12 19v3M2 12h3M19 12h3"
       }));
     default:
       return null;
@@ -1913,6 +2235,242 @@ function AbaHoje({
     ev: ev,
     key: i
   })));
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   7b. ABA "MAPA" — CALOR DE DEMANDA POR ZONA
+   Mapa tático estilizado (não cartográfico) para funcionar 100% offline,
+   consistente com a promessa do produto de não depender de conexão no
+   carro. Reaproveita a mesma modelagem de perfil de zona × faixa
+   horária × eventos do dia usada no ranking de bairros.
+   ════════════════════════════════════════════════════════════════════ */
+function AbaMapa({
+  agora,
+  dados
+}) {
+  const [selecionada, setSelecionada] = useState(null);
+  const hojeISO = paraISO(agora);
+  const eventosHoje = useMemo(() => dados.eventos.filter(e => e.dataISO === hojeISO), [dados, hojeISO]);
+  const concursoHoje = useMemo(() => dados.concursos.find(c => c.dataISO === hojeISO) || null, [dados, hojeISO]);
+  const {
+    faixa,
+    zonas
+  } = useMemo(() => calcularCalorZonas(agora, eventosHoje, concursoHoje), [agora.getHours(), agora.getDay(), eventosHoje, concursoHoje]);
+  const porId = useMemo(() => {
+    const m = {};
+    zonas.forEach(z => {
+      m[z.id] = z;
+    });
+    return m;
+  }, [zonas]);
+  const top3Ids = zonas.slice(0, 3).map(z => z.id);
+  const zonaAtiva = porId[selecionada] || zonas[0];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "content"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card card-featured fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title-group"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-icon"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "map",
+    size: 16,
+    color: "var(--accent)"
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "label"
+  }, "Mapa de calor · ", faixa.label), /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, "Demanda por zona, agora"))), /*#__PURE__*/React.createElement(Badge, {
+    tipo: badgeClassePorDemanda(zonas[0].nivel),
+    icon: "fire"
+  }, zonas[0].nome.split(' ')[0])), /*#__PURE__*/React.createElement("div", {
+    className: "map-wrap"
+  }, /*#__PURE__*/React.createElement("svg", {
+    viewBox: "0 0 100 102",
+    className: "map-svg"
+  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("pattern", {
+    id: "gradeMapa",
+    width: "8",
+    height: "8",
+    patternUnits: "userSpaceOnUse"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M8 0H0V8",
+    fill: "none",
+    stroke: "rgba(255,255,255,.04)",
+    strokeWidth: "0.4"
+  })), /*#__PURE__*/React.createElement("radialGradient", {
+    id: "gRio",
+    cx: "25%",
+    cy: "95%",
+    r: "80%"
+  }, /*#__PURE__*/React.createElement("stop", {
+    offset: "0%",
+    stopColor: "rgba(59,130,246,.24)"
+  }), /*#__PURE__*/React.createElement("stop", {
+    offset: "100%",
+    stopColor: "rgba(59,130,246,0)"
+  }))), /*#__PURE__*/React.createElement("rect", {
+    x: "0",
+    y: "0",
+    width: "100",
+    height: "102",
+    fill: "url(#gradeMapa)"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M0,58 C12,66 6,80 16,90 C24,98 12,102 0,102 L0,58Z",
+    fill: "url(#gRio)"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M0,58 C12,66 6,80 16,90 C24,98 12,102 0,102",
+    fill: "none",
+    stroke: "rgba(59,130,246,.28)",
+    strokeWidth: "0.6"
+  }), /*#__PURE__*/React.createElement("g", {
+    transform: "translate(91,8)"
+  }, /*#__PURE__*/React.createElement("text", {
+    textAnchor: "middle",
+    dy: "1.2",
+    className: "compass-label"
+  }, "N"), /*#__PURE__*/React.createElement("path", {
+    d: "M0,-4.5 L0,-1.5",
+    stroke: "var(--text-tertiary)",
+    strokeWidth: "0.6"
+  })), ZONAS_MAPA.map(z => {
+    const dado = porId[z.id];
+    const raio = 2.4 + dado.nota * 0.85;
+    const cor = corPorDemanda(dado.nivel);
+    const isSel = zonaAtiva.id === z.id;
+    const mostrarLabel = top3Ids.includes(z.id) || isSel;
+    return /*#__PURE__*/React.createElement("g", {
+      key: z.id,
+      className: "zona-grupo",
+      transform: `translate(${z.x},${z.y})`,
+      onClick: () => setSelecionada(z.id)
+    }, /*#__PURE__*/React.createElement("circle", {
+      r: "7",
+      fill: "rgba(0,0,0,0.01)"
+    }), dado.nivel === 'Explosiva' && /*#__PURE__*/React.createElement("circle", {
+      r: raio + 2,
+      className: "zona-pulso",
+      style: {
+        stroke: cor
+      }
+    }), /*#__PURE__*/React.createElement("circle", {
+      r: raio,
+      className: `zona-blob ${isSel ? 'selecionada' : ''}`,
+      style: {
+        fill: cor,
+        filter: `drop-shadow(0 0 4px ${cor})`
+      }
+    }), dado.evento && /*#__PURE__*/React.createElement("circle", {
+      r: "1.4",
+      cy: -raio - 1.8,
+      className: "zona-evento-dot"
+    }), mostrarLabel && /*#__PURE__*/React.createElement("text", {
+      y: raio + 5.2,
+      textAnchor: "middle",
+      className: `zona-label ${isSel ? 'ativa' : ''}`
+    }, z.nome.split(' ')[0]));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "cal-legend"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "legend-item"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "legend-dot",
+    style: {
+      background: 'var(--blue)'
+    }
+  }), "Baixa"), /*#__PURE__*/React.createElement("div", {
+    className: "legend-item"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "legend-dot",
+    style: {
+      background: 'var(--amber)'
+    }
+  }), "Média"), /*#__PURE__*/React.createElement("div", {
+    className: "legend-item"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "legend-dot",
+    style: {
+      background: 'var(--orange)'
+    }
+  }), "Alta"), /*#__PURE__*/React.createElement("div", {
+    className: "legend-item"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "legend-dot",
+    style: {
+      background: 'var(--red)'
+    }
+  }), "Explosiva"), /*#__PURE__*/React.createElement("div", {
+    className: "legend-item"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "legend-dot",
+    style: {
+      background: 'var(--purple)'
+    }
+  }), "Evento ao vivo"))), zonaAtiva && /*#__PURE__*/React.createElement("div", {
+    className: "card fade-in"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-head"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-title-group"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "card-icon"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "crosshair",
+    size: 16,
+    color: "var(--accent)"
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "label"
+  }, "Zona selecionada"), /*#__PURE__*/React.createElement("div", {
+    className: "card-title"
+  }, zonaAtiva.nome))), /*#__PURE__*/React.createElement(Badge, {
+    tipo: badgeClassePorDemanda(zonaAtiva.nivel)
+  }, zonaAtiva.nivel)), /*#__PURE__*/React.createElement(Estrelas, {
+    nota: Math.max(1, Math.round(zonaAtiva.nota))
+  }), zonaAtiva.evento ? /*#__PURE__*/React.createElement("div", {
+    className: "event-tip",
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "fire",
+    size: 15,
+    color: "var(--accent)"
+  }), /*#__PURE__*/React.createElement("span", null, "Puxando a demanda: ", /*#__PURE__*/React.createElement("b", null, zonaAtiva.evento))) : /*#__PURE__*/React.createElement("div", {
+    className: "rank-reason",
+    style: {
+      marginTop: 10
+    }
+  }, "Perfil da zona: ", zonaAtiva.perfil.replace(/-/g, ' '))), /*#__PURE__*/React.createElement("div", {
+    className: "section-title"
+  }, /*#__PURE__*/React.createElement("h2", null, "Ranking completo de zonas"), /*#__PURE__*/React.createElement("span", {
+    className: "count"
+  }, zonas.length)), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, zonas.map((z, i) => /*#__PURE__*/React.createElement("div", {
+    className: "rank-item",
+    key: z.id,
+    onClick: () => setSelecionada(z.id),
+    style: {
+      cursor: 'pointer'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: `rank-num ${i === 0 ? 'rank-num-1' : i < 3 ? 'rank-num-2' : 'rank-num-3'}`
+  }, i + 1), /*#__PURE__*/React.createElement("div", {
+    className: "rank-body"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rank-name"
+  }, z.nome), /*#__PURE__*/React.createElement("div", {
+    className: "rank-reason"
+  }, z.evento ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Icon, {
+    name: "fire",
+    size: 11,
+    color: "var(--accent)"
+  }), " ", z.evento) : `Zona ${z.perfil.replace(/-/g, ' ')}`)), /*#__PURE__*/React.createElement(Badge, {
+    tipo: badgeClassePorDemanda(z.nivel)
+  }, z.nivel)))));
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2440,6 +2998,9 @@ function App() {
   }), estado === 'ok' && dados && (aba === 'hoje' ? /*#__PURE__*/React.createElement(AbaHoje, {
     agora: agora,
     dados: dados
+  }) : aba === 'mapa' ? /*#__PURE__*/React.createElement(AbaMapa, {
+    agora: agora,
+    dados: dados
   }) : /*#__PURE__*/React.createElement(AbaAgenda, {
     hoje: agora,
     dados: dados,
@@ -2453,18 +3014,29 @@ function App() {
   }, aba === 'hoje' && /*#__PURE__*/React.createElement("span", {
     className: "nav-indicator",
     style: {
-      left: 'calc(25% - 14px)'
+      left: 'calc(16.667% - 14px)'
     }
   }), /*#__PURE__*/React.createElement(Icon, {
     name: "home",
     size: 19
   }), /*#__PURE__*/React.createElement("span", null, "Hoje")), /*#__PURE__*/React.createElement("button", {
+    className: `nav-item ${aba === 'mapa' ? 'active' : ''}`,
+    onClick: () => setAba('mapa')
+  }, aba === 'mapa' && /*#__PURE__*/React.createElement("span", {
+    className: "nav-indicator",
+    style: {
+      left: 'calc(50% - 14px)'
+    }
+  }), /*#__PURE__*/React.createElement(Icon, {
+    name: "map",
+    size: 19
+  }), /*#__PURE__*/React.createElement("span", null, "Mapa")), /*#__PURE__*/React.createElement("button", {
     className: `nav-item ${aba === 'agenda' ? 'active' : ''}`,
     onClick: () => setAba('agenda')
   }, aba === 'agenda' && /*#__PURE__*/React.createElement("span", {
     className: "nav-indicator",
     style: {
-      left: 'calc(75% - 14px)'
+      left: 'calc(83.333% - 14px)'
     }
   }), /*#__PURE__*/React.createElement(Icon, {
     name: "calendar",
